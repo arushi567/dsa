@@ -1,0 +1,107 @@
+#include <iostream>
+#include <vector>
+#include <string>
+#include <limits.h>
+using namespace std;
+
+const int MAX = 100;
+int adjMatrix[MAX][MAX];  // Adjacency matrix
+vector<string> cities;    // ID ? Name
+
+int minKey(vector<int>& key, vector<bool>& mstSet, int numCities) {
+    int min = INT_MAX, minIndex = -1;
+    for (int v = 0; v < numCities; v++) {
+        if (!mstSet[v] && key[v] < min) {
+            min = key[v];
+            minIndex = v;
+        }
+    }
+    return minIndex;
+}
+
+void printMST(vector<int>& parent, int numCities) {
+    cout << "\nMinimum Spanning Tree (MST):\n";
+    cout << "Edge \tWeight\n";
+    int totalCost = 0;
+    for (int i = 1; i < numCities; i++) {
+        cout << cities[parent[i]] << " - " << cities[i] << "\t" << adjMatrix[i][parent[i]] << "\n";
+        totalCost += adjMatrix[i][parent[i]];
+    }
+    cout << "\nTotal Minimum Cost: " << totalCost << "\n";
+}
+
+void primMST(int numCities) {
+    vector<int> key(numCities, INT_MAX);
+    vector<bool> mstSet(numCities, false);
+    vector<int> parent(numCities);
+
+    key[0] = 0;
+    parent[0] = -1;
+
+    for (int count = 0; count < numCities - 1; count++) {
+        int u = minKey(key, mstSet, numCities);
+        mstSet[u] = true;
+
+        for (int v = 0; v < numCities; v++) {
+            if (adjMatrix[u][v] && !mstSet[v] && adjMatrix[u][v] < key[v]) {
+                parent[v] = u;
+                key[v] = adjMatrix[u][v];
+            }
+        }
+    }
+
+    printMST(parent, numCities);
+}
+
+int main() {
+    int numCities;
+    cout << "Enter number of cities: ";
+    cin >> numCities;
+
+    for (int i = 0; i < numCities; i++) {
+    	string city;
+		cin >> city;
+		cities.push_back(city);
+}
+
+
+    // Initialize adjacency matrix to 0
+    for (int i = 0; i < numCities; i++) {
+        for (int j = 0; j < numCities; j++) {
+            adjMatrix[i][j] = 0;
+        }
+    }
+
+    cout << "Enter the costs between cities:\n";
+    for (int i = 0; i < numCities; i++) {
+        for (int j = i + 1; j < numCities; j++) {
+            cout << "Cost from " << cities[i] << " to " << cities[j] << ": ";
+            int cost;
+            cin >> cost;
+            adjMatrix[i][j] = cost;
+            adjMatrix[j][i] = cost;
+        }
+    }
+
+    cout << "\nAdjacency Matrix:\n\n\t";
+    for (int i = 0; i < numCities; i++) {
+        cout << cities[i].substr(0, 3) << "\t";
+    }
+    cout << endl;
+
+    for (int i = 0; i < numCities; i++) {
+        cout << cities[i].substr(0, 3) << "\t";
+        for (int j = 0; j < numCities; j++) {
+            if (adjMatrix[i][j] == 0 && i != j) {
+                cout << "---\t";
+            } else {
+                cout << adjMatrix[i][j] << "\t";
+            }
+        }
+        cout << endl;
+    }
+
+    primMST(numCities);
+
+    return 0;
+}

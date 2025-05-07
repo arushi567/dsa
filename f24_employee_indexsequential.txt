@@ -1,0 +1,190 @@
+#include <iostream>
+#include <fstream>
+#include <string>
+#include <vector>
+#include <algorithm>
+
+using namespace std;
+
+struct Employee {
+    string id;
+    string name;
+    string designation;
+    string salary;
+};
+
+struct IndexEntry {
+    string id;
+    long pos;
+};
+
+bool compareIndex(IndexEntry a, IndexEntry b) {
+    return a.id < b.id;
+}
+
+vector<IndexEntry> loadIndex() {
+    vector<IndexEntry> index;
+    ifstream indexFile("index.txt");
+    string id;
+    long pos;
+    while (indexFile >> id >> pos) {
+        IndexEntry entry;
+        entry.id = id;
+        entry.pos = pos;
+        index.push_back(entry);
+    }
+    indexFile.close();
+    return index;
+}
+
+void saveIndex(vector<IndexEntry> index) {
+    ofstream indexFile("index.txt", ios::trunc);
+    for (int i = 0; i < index.size(); i++) {
+        indexFile << index[i].id << " " << index[i].pos << "\n";
+    }
+    indexFile.close();
+}
+
+int binarySearchIndex(vector<IndexEntry> index, string id) {
+    int low = 0, high = index.size() - 1;
+    while (low <= high) {
+        int mid = (low + high) / 2;
+        if (index[mid].id == id) return mid;
+        else if (index[mid].id < id) low = mid + 1;
+        else high = mid - 1;
+    }
+    return -1;
+}
+
+void addEmployee() {
+    Employee e;
+    cout << "Enter Employee ID: ";
+    cin >> e.id;
+
+    vector<IndexEntry> index = loadIndex();
+    if (binarySearchIndex(index, e.id) != -1) {
+        cout << "Error: Employee ID already exists.\n";
+        return;
+    }
+
+    cin.ignore(); // clear newline left in buffer
+    cout << "Enter Name: ";
+    getline(cin, e.name);
+    cout << "Enter Designation: ";
+    getline(cin, e.designation);
+    cout << "Enter Salary: ";
+    getline(cin, e.salary);
+
+    ofstream data("employee.txt", ios::app | ios::binary);
+    long pos = data.tellp();
+    data << e.id << "," << e.name << "," << e.designation << "," << e.salary << "\n";
+    data.close();
+
+    IndexEntry newEntry;
+    newEntry.id = e.id;
+    newEntry.pos = pos;
+    index.push_back(newEntry);
+
+    sort(index.begin(), index.end(), compareIndex);
+    saveIndex(index);
+
+    cout << "Employee record added successfully.\n";
+}
+
+void displayEmployee() {
+    cout << "Enter Employee ID to display: ";
+    string search_id;
+    cin >> search_id;
+
+    vector<IndexEntry> index = loadIndex();
+    int idx = binarySearchIndex(index, search_id);
+
+    if (idx == -1) {
+        cout << "Employee with ID " << search_id << " not found.\n";
+        return;
+    }
+
+    ifstream data("employee.txt", ios::binary);
+    data.seekg(index[idx].pos);
+    string line;
+    getline(data, line);
+    data.close();
+
+    size_t p1 = line.find(",");
+    size_t p2 = line.find(",", p1 + 1);
+    size_t p3 = line.find(",", p2 + 1);
+
+    cout << "\nEmployee Details:\n";
+    cout << "ID: " << line.substr(0, p1) << endl;
+    cout << "Name: " << line.substr(p1 + 1, p2 - p1 - 1) << endl;
+    cout << "Designation: " << line.substr(p2 + 1, p3 - p2 - 1) << endl;
+    cout << "Salary: " << line.substr(p3 + 1) << endl;
+}
+
+void deleteEmployee() {
+    cout << "Enter Employee ID to delete: ";
+    string delete_id;
+    cin >> delete_id;
+
+    vector<IndexEntry> index = loadIndex();
+    int idx = binarySearchIndex(index, delete_id);
+
+    if (idx == -1) {
+        cout << "Employee with ID " << delete_id << " not found.\n";
+        return;
+    }
+
+    ifstream data("employee.txt", ios::binary);
+    ofstream temp_data("temp_employee.txt", ios::binary);
+
+    string line;
+    long new_pos;
+    vector<IndexEntry> new_index;
+    while (getline(data, line)) {
+        size_t p = line.find(",");
+        string current_id = line.substr(0, p);
+        if (current_id != delete_id) {
+            new_pos = temp_data.tellp();
+            temp_data << line << "\n";
+
+            IndexEntry e;
+            e.id = current_id;
+            e.pos = new_pos;
+            new_index.push_back(e);
+        }
+    }
+
+    data.close();
+    temp_data.close();
+
+    remove("employee.txt");
+    rename("temp_employee.txt", "employee.txt");
+
+    sort(new_index.begin(), new_index.end(), compareIndex);
+    saveIndex(new_index);
+
+    cout << "Employee deleted successfully.\n";
+}
+
+int main() {
+    int choice;
+    do {
+        cout << "\n=== Employee Management System ===\n";
+        cout << "1. Add Employee\n";
+        cout << "2. Display Employee\n";
+        cout << "3. Delete Employee\n";
+        cout << "4. Exit\n";
+        cout << "Enter your choice: ";
+        cin >> choice;
+
+        switch (choice) {
+            case 1: addEmployee(); break;
+            case 2: displayEmployee(); break;
+            case 3: deleteEmployee(); break;
+            case 4: cout << "Exiting...\n"; break;
+            default: cout << "Invalid choice. Try again.\n";
+        }
+    } while (choice != 4);
+
+    return 0;
+}

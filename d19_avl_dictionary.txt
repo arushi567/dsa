@@ -1,0 +1,297 @@
+#include <iostream>
+#include <string>
+using namespace std;
+
+class Node {
+public:
+    string keyword;
+    string meaning;
+    Node* left;
+    Node* right;
+    int height;
+
+    Node(string k, string m) {
+        keyword = k;
+        meaning = m;
+        left = right = NULL;
+        height = 1;
+    }
+};
+
+class Dictionary {
+private:
+    Node* root;
+
+    int getHeight(Node* node) {
+        if (!node) return 0;
+        return node->height;
+    }
+
+    int getBalance(Node* node) {
+        if (!node) return 0;
+        return getHeight(node->left) - getHeight(node->right);
+    }
+
+    void updateHeight(Node* node) {
+        node->height = 1 + max(getHeight(node->left), getHeight(node->right));
+    }
+
+    Node* rotateRight(Node* y) {
+        Node* x = y->left;
+        Node* T2 = x->right;
+
+        x->right = y;
+        y->left = T2;
+
+        updateHeight(y);
+        updateHeight(x);
+        return x;
+    }
+
+    Node* rotateLeft(Node* x) {
+        Node* y = x->right;
+        Node* T2 = y->left;
+
+        y->left = x;
+        x->right = T2;
+
+        updateHeight(x);
+        updateHeight(y);
+        return y;
+    }
+
+    Node* insert(Node* node, string key, string meaning) {
+        if (!node) return new Node(key, meaning);
+
+        if (key < node->keyword)
+            node->left = insert(node->left, key, meaning);
+        else if (key > node->keyword)
+            node->right = insert(node->right, key, meaning);
+        else {
+            cout << "Keyword already exists.\n";
+            return node;
+        }
+
+        updateHeight(node);
+
+        int balance = getBalance(node);
+
+        // Left Left
+        if (balance > 1 && key < node->left->keyword)
+            return rotateRight(node);
+
+        // Right Right
+        if (balance < -1 && key > node->right->keyword)
+            return rotateLeft(node);
+
+        // Left Right
+        if (balance > 1 && key > node->left->keyword) {
+            node->left = rotateLeft(node->left);
+            return rotateRight(node);
+        }
+
+        // Right Left
+        if (balance < -1 && key < node->right->keyword) {
+            node->right = rotateRight(node->right);
+            return rotateLeft(node);
+        }
+
+        return node;
+    }
+
+    Node* findMin(Node* node) {
+        while (node->left)
+            node = node->left;
+        return node;
+    }
+
+Node* deleteKeyword(Node* node, string key) {
+    if (!node) return NULL;
+
+    if (key < node->keyword)
+        node->left = deleteKeyword(node->left, key);
+    else if (key > node->keyword)
+        node->right = deleteKeyword(node->right, key);
+    else {
+        // Use simplified deletion logic
+        if (!node->left) {
+            Node* temp = node->right;
+            delete node;
+            return temp;
+        } else if (!node->right) {
+            Node* temp = node->left;
+            delete node;
+            return temp;
+        } else {
+            Node* temp = findMin(node->right);
+            node->keyword = temp->keyword;
+            node->meaning = temp->meaning;
+            node->right = deleteKeyword(node->right, temp->keyword);
+        }
+    }
+
+    updateHeight(node);
+
+    int balance = getBalance(node);
+
+    // Left Left
+    if (balance > 1 && getBalance(node->left) >= 0)
+        return rotateRight(node);
+
+    // Left Right
+    if (balance > 1 && getBalance(node->left) < 0) {
+        node->left = rotateLeft(node->left);
+        return rotateRight(node);
+    }
+
+    // Right Right
+    if (balance < -1 && getBalance(node->right) <= 0)
+        return rotateLeft(node);
+
+    // Right Left
+    if (balance < -1 && getBalance(node->right) > 0) {
+        node->right = rotateRight(node->right);
+        return rotateLeft(node);
+    }
+
+    return node;
+}
+
+
+    Node* update(Node* node, string key, string newMeaning) {
+        if (!node) return NULL;
+        if (key < node->keyword)
+            return update(node->left, key, newMeaning);
+        else if (key > node->keyword)
+            return update(node->right, key, newMeaning);
+        else {
+            node->meaning = newMeaning;
+            return node;
+        }
+    }
+
+    void inorder(Node* node) {
+        if (!node) return;
+        inorder(node->left);
+        cout << node->keyword << " : " << node->meaning << endl;
+        inorder(node->right);
+    }
+
+    void reverseInorder(Node* node) {
+        if (!node) return;
+        reverseInorder(node->right);
+        cout << node->keyword << " : " << node->meaning << endl;
+        reverseInorder(node->left);
+    }
+
+    int search(Node* node, string key, int& comparisons) {
+        while (node) {
+            comparisons++;
+            if (key == node->keyword)
+                return 1;
+            else if (key < node->keyword)
+                node = node->left;
+            else
+                node = node->right;
+        }
+        return 0;
+    }
+
+public:
+    Dictionary() {
+        root = NULL;
+    }
+
+    void add(string key, string meaning) {
+        root = insert(root, key, meaning);
+    }
+
+    void remove(string key) {
+        root = deleteKeyword(root, key);
+    }
+
+    void updateMeaning(string key, string newMeaning) {
+        if (!update(root, key, newMeaning))
+            cout << "Keyword not found.\n";
+    }
+
+    void displayAscending() {
+        cout << "Dictionary in Ascending Order:\n";
+        inorder(root);
+    }
+
+    void displayDescending() {
+        cout << "Dictionary in Descending Order:\n";
+        reverseInorder(root);
+    }
+
+    void findKeyword(string key) {
+        int comparisons = 0;
+        if (search(root, key, comparisons))
+            cout << "Keyword found in " << comparisons << " comparisons.\n";
+        else
+            cout << "Keyword not found after " << comparisons << " comparisons.\n";
+    }
+
+    void maxComparisons() {
+        cout << "Maximum comparisons required (height of AVL Tree): " << getHeight(root) << endl;
+    }
+};
+
+int main() {
+    Dictionary dict;
+    int choice;
+    string key, meaning;
+
+    do {
+        cout << "\n--- Dictionary Menu ---\n";
+        cout << "1. Add Keyword\n2. Delete Keyword\n3. Update Meaning\n4. Display Ascending\n5. Display Descending\n";
+        cout << "6. Search Keyword\n7. Max Comparisons\n8. Exit\n";
+        cout << "Enter choice: ";
+        cin >> choice;
+        cin.ignore();
+
+        switch (choice) {
+        case 1:
+            cout << "Enter keyword: ";
+            getline(cin, key);
+            cout << "Enter meaning: ";
+            getline(cin, meaning);
+            dict.add(key, meaning);
+            break;
+        case 2:
+            cout << "Enter keyword to delete: ";
+            getline(cin, key);
+            dict.remove(key);
+            break;
+        case 3:
+            cout << "Enter keyword to update: ";
+            getline(cin, key);
+            cout << "Enter new meaning: ";
+            getline(cin, meaning);
+            dict.updateMeaning(key, meaning);
+            break;
+        case 4:
+            dict.displayAscending();
+            break;
+        case 5:
+            dict.displayDescending();
+            break;
+        case 6:
+            cout << "Enter keyword to search: ";
+            getline(cin, key);
+            dict.findKeyword(key);
+            break;
+        case 7:
+            dict.maxComparisons();
+            break;
+        case 8:
+            cout << "Exiting.\n";
+            break;
+        default:
+            cout << "Invalid choice!\n";
+        }
+    } while (choice != 8);
+
+    return 0;
+}

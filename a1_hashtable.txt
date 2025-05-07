@@ -1,0 +1,186 @@
+#include <iostream>
+#include <string>
+using namespace std;
+
+const int TABLE_SIZE = 10;
+
+struct Client {
+    string name;
+    string phone;
+
+    Client(string n = "", string p = "") {
+        name = n;
+        phone = p;
+    }
+};
+
+int hashFunction(string key) {
+    int sum = 0;
+    for (int i = 0; i < key.length(); ++i)
+        sum += key[i];
+    return sum % TABLE_SIZE;
+}
+
+// ---------------- Separate Chaining ----------------
+class SCNode {
+public:
+    Client data;
+    SCNode* next;
+
+    SCNode(Client c) {
+        data = c;
+        next = NULL;
+    }
+};
+
+class SeparateChaining {
+    SCNode* table[TABLE_SIZE];
+
+public:
+    SeparateChaining() {
+        for (int i = 0; i < TABLE_SIZE; ++i)
+            table[i] = NULL;
+    }
+
+    void insert(Client c) {
+        int index = hashFunction(c.name);
+        SCNode* newNode = new SCNode(c);
+        newNode->next = table[index];
+        table[index] = newNode;
+    }
+
+    int search(string name, string& phone) {
+        int index = hashFunction(name);
+        SCNode* temp = table[index];
+        int comparisons = 0;
+        while (temp != NULL) {
+            comparisons++;
+            if (temp->data.name == name) {
+                phone = temp->data.phone;
+                return comparisons;
+            }
+            temp = temp->next;
+        }
+        return comparisons;
+    }
+
+    void display() {
+        for (int i = 0; i < TABLE_SIZE; ++i) {
+            cout << "Bucket " << i << " ? ";
+            SCNode* temp = table[i];
+            while (temp != NULL) {
+                cout << "[" << temp->data.name << ": " << temp->data.phone << "] ? ";
+                temp = temp->next;
+            }
+            cout << "NULL\n";
+        }
+    }
+};
+
+// ---------------- Linear Probing ----------------
+class LinearProbing {
+    Client table[TABLE_SIZE];
+    bool occupied[TABLE_SIZE];
+
+public:
+    LinearProbing() {
+        for (int i = 0; i < TABLE_SIZE; ++i)
+            occupied[i] = false;
+    }
+
+    void insert(Client c) {
+        int index = hashFunction(c.name);
+        int start = index;
+
+        do {
+            if (!occupied[index]) {
+                table[index] = c;
+                occupied[index] = true;
+                return;
+            }
+            index = (index + 1) % TABLE_SIZE;
+        } while (index != start);
+
+        cout << "Table full. Cannot insert " << c.name << endl;
+    }
+
+    int search(string name, string& phone) {
+        int index = hashFunction(name);
+        int start = index;
+        int comparisons = 0;
+
+        do {
+            comparisons++;
+            if (occupied[index] && table[index].name == name) {
+                phone = table[index].phone;
+                return comparisons;
+            }
+            index = (index + 1) % TABLE_SIZE;
+        } while (occupied[index] && index != start);
+
+        return comparisons;
+    }
+
+    void display() {
+        for (int i = 0; i < TABLE_SIZE; ++i) {
+            if (occupied[i])
+                cout << "Index " << i << " ? [" << table[i].name << ": " << table[i].phone << "]\n";
+            else
+                cout << "Index " << i << " ? Empty\n";
+        }
+    }
+};
+
+// ---------------- Comparison ----------------
+void compareSearches(SeparateChaining& sc, LinearProbing& lp, string names[], int n) {
+    cout << "\n--- Search Comparison ---\n";
+    int totalSC = 0, totalLP = 0;
+
+    for (int i = 0; i < n; ++i) {
+        string phone;
+        int scCmp = sc.search(names[i], phone);
+        int lpCmp = lp.search(names[i], phone);
+        cout << "Searching \"" << names[i] << "\" ? SC: " << scCmp << " comparisons, LP: " << lpCmp << " comparisons\n";
+        totalSC += scCmp;
+        totalLP += lpCmp;
+    }
+
+    cout << "\nTotal Comparisons ? SC: " << totalSC << ", LP: " << totalLP << endl;
+    cout << "Average Comparisons ? SC: " << (float)totalSC / n << ", LP: " << (float)totalLP / n << endl;
+}
+
+// ---------------- Main ----------------
+int main() {
+    SeparateChaining sc;
+    LinearProbing lp;
+
+    int n;
+    cout << "Enter number of clients to insert (max 10 recommended): ";
+    cin >> n;
+
+    string* names = new string[n];
+
+    for (int i = 0; i < n; ++i) {
+        string name, phone;
+        cout << "\nEnter name of client " << (i + 1) << ": ";
+        cin >> name;
+        cout << "Enter phone number of " << name << ": ";
+        cin >> phone;
+
+        Client c(name, phone);
+        sc.insert(c);
+        lp.insert(c);
+        names[i] = name;
+    }
+
+    cout << "\n--- Separate Chaining Table ---\n";
+    sc.display();
+
+    cout << "\n--- Linear Probing Table ---\n";
+    lp.display();
+
+    compareSearches(sc, lp, names, n);
+
+    delete[] names;
+    return 0;
+}

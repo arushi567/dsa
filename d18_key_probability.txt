@@ -1,0 +1,79 @@
+#include <iostream>
+using namespace std;
+
+const int MAX = 100;
+double prob[MAX];                  // Access probabilities of each key
+int keys[MAX];                     // Key values
+double cost[MAX][MAX];            // Minimum cost table
+double weight[MAX][MAX];          // Weight (sum of probabilities)
+int root[MAX][MAX];               // Root index table for reconstruction
+
+void printInOrder(int i, int j) {
+    if (i >= j) return;
+    int r = root[i][j];
+    printInOrder(i, r);
+    cout << keys[r] << " ";
+    printInOrder(r + 1, j);
+}
+
+int main() {
+    int n;
+    cout << "Enter number of keys: ";
+    cin >> n;
+
+    cout << "Enter " << n << " keys in sorted order:\n";
+    for (int i = 0; i < n; ++i) {
+        cin >> keys[i];
+    }
+
+    cout << "Enter " << n << " access probabilities for each key (values between 0 and 1):\n";
+    for (int i = 0; i < n; ++i) {
+        cin >> prob[i];
+    }
+
+    // Initialize all tables
+    for (int i = 0; i <= n; ++i) {
+        for (int j = 0; j <= n; ++j) {
+            cost[i][j] = 0.0;
+            weight[i][j] = 0.0;
+            root[i][j] = 0;
+        }
+    }
+
+    // Base case: Single keys
+    for (int i = 0; i < n; ++i) {
+        cost[i][i + 1] = prob[i];
+        weight[i][i + 1] = prob[i];
+        root[i][i + 1] = i;
+    }
+
+    // Fill tables for chains of length 2 to n
+    for (int length = 2; length <= n; ++length) {
+        for (int i = 0; i <= n - length; ++i) {
+            int j = i + length;
+            cost[i][j] = 1e9;  // INF for double
+
+            // Compute total probability (weight) for subarray i to j-1
+            weight[i][j] = 0.0;
+            for (int t = i; t < j; ++t) {
+                weight[i][j] += prob[t];
+            }
+
+            // Try every possible root and pick minimum cost configuration
+            for (int k = i; k < j; ++k) {
+                double c = cost[i][k] + cost[k + 1][j] + weight[i][j];
+                if (c < cost[i][j]) {
+                    cost[i][j] = c;
+                    root[i][j] = k;
+                }
+            }
+        }
+    }
+
+    cout << "\nMinimum cost of Optimal BST: " << cost[0][n] << endl;
+    cout << "\nInorder traversal of Optimal BST:\n";
+    printInOrder(0, n);
+    cout << endl;
+
+    return 0;
+}
