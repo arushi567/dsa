@@ -1,0 +1,181 @@
+#include <iostream>
+#include <vector>
+using namespace std;
+
+class Set {
+private:
+    vector<int> elements;
+
+public:
+    void add() {
+        int n, val;
+        cout << "Enter number of elements to add: ";
+        cin >> n;
+        for (int i = 0; i < n; i++) {
+            cout << "Enter element " << (i + 1) << ": ";
+            cin >> val;
+            addElement(val);
+        }
+    }
+
+    void addElement(int val) {
+        if (!contains(val)) {
+            elements.push_back(val);
+        } else {
+            cout << "Element " << val << " already exists.\n";
+        }
+    }
+
+    void remove(int val) {
+        for (int i = 0; i < elements.size(); i++) {
+            if (elements[i] == val) {
+                elements.erase(elements.begin() + i);
+                return;
+            }
+        }
+        cout << "Element not found.\n";
+    }
+
+    bool contains(int val) {
+        for (int i = 0; i < elements.size(); i++) {
+            if (elements[i] == val)
+                return true;
+        }
+        return false;
+    }
+
+    int size() {
+        return elements.size();
+    }
+
+    void display() {
+        if (elements.empty()) {
+            cout << "Set is empty.\n";
+            return;
+        }
+        for (int i = 0; i < elements.size(); i++) {
+            cout << elements[i] << " ";
+        }
+        cout << endl;
+    }
+
+    void clear() {
+        elements.clear();
+    }
+
+    void unionSet(Set &other, Set &result) {
+        result.clear();
+        for (int i = 0; i < elements.size(); i++) {
+            result.addElement(elements[i]);
+        }
+        for (int i = 0; i < other.elements.size(); i++) {
+            result.addElement(other.elements[i]);
+        }
+    }
+
+    void intersection(Set &other, Set &result) {
+        result.clear();
+        for (int i = 0; i < elements.size(); i++) {
+            if (other.contains(elements[i])) {
+                result.addElement(elements[i]);
+            }
+        }
+    }
+
+    void difference(Set &other, Set &result) {
+        result.clear();
+        for (int i = 0; i < elements.size(); i++) {
+            if (!other.contains(elements[i])) {
+                result.addElement(elements[i]);
+            }
+        }
+    }
+
+    bool isSubset(Set &other) {
+        for (int i = 0; i < elements.size(); i++) {
+            if (!other.contains(elements[i]))
+                return false;
+        }
+        return true;
+    }
+};
+
+int main() {
+    Set set1, set2, result;
+    int choice, val;
+
+    while (true) {
+        cout << "\nMenu:\n"
+             << "1. Add to Set 1\n"
+             << "2. Add to Set 2\n"
+             << "3. Remove from Set 1\n"
+             << "4. Remove from Set 2\n"
+             << "5. Display Set 1\n"
+             << "6. Display Set 2\n"
+             << "7. Union (Set 1 ? Set 2)\n"
+             << "8. Intersection (Set 1 n Set 2)\n"
+             << "9. Difference (Set 1 - Set 2)\n"
+             << "10. Difference (Set 2 - Set 1)\n"
+             << "11. Is Set 1 ? Set 2?\n"
+             << "12. Exit\n"
+             << "Enter choice: ";
+        cin >> choice;
+
+        switch (choice) {
+            case 1:
+                set1.add();
+                break;
+            case 2:
+                set2.add();
+                break;
+            case 3:
+                cout << "Enter value to remove from Set 1: ";
+                cin >> val;
+                set1.remove(val);
+                break;
+            case 4:
+                cout << "Enter value to remove from Set 2: ";
+                cin >> val;
+                set2.remove(val);
+                break;
+            case 5:
+                cout << "Set 1: ";
+                set1.display();
+                break;
+            case 6:
+                cout << "Set 2: ";
+                set2.display();
+                break;
+            case 7:
+                set1.unionSet(set2, result);
+                cout << "Union: ";
+                result.display();
+                break;
+            case 8:
+                set1.intersection(set2, result);
+                cout << "Intersection: ";
+                result.display();
+                break;
+            case 9:
+                set1.difference(set2, result);
+                cout << "Set 1 - Set 2: ";
+                result.display();
+                break;
+            case 10:
+                set2.difference(set1, result);
+                cout << "Set 2 - Set 1: ";
+                result.display();
+                break;
+            case 11:
+                if (set1.isSubset(set2))
+                    cout << "Set 1 is a subset of Set 2.\n";
+                else
+                    cout << "Set 1 is NOT a subset of Set 2.\n";
+                break;
+            case 12:
+                return 0;
+            default:
+                cout << "Invalid choice.\n";
+        }
+    }
+}
